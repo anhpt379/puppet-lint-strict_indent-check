@@ -163,10 +163,15 @@ PuppetLint.new_check(:'strict_indent') do
     if [:INDENT,:WHITESPACE].include?(problem[:token].type)
       problem[:token].value = char_for_indent * problem[:indent]
     else
-      tokens.insert(
-        tokens.find_index(problem[:token]),
-        PuppetLint::Lexer::Token.new(:INDENT, char_for_indent * problem[:indent], problem[:line], problem[:column])
-      )
+      if problem[:token].type == :HEREDOC
+        current_indent = problem[:token].value.split("\n").last.length
+        problem[:token].raw.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
+      else
+        tokens.insert(
+          tokens.find_index(problem[:token]),
+          PuppetLint::Lexer::Token.new(:INDENT, char_for_indent * problem[:indent], problem[:line], problem[:column])
+        )
+      end
     end
   end
 end
