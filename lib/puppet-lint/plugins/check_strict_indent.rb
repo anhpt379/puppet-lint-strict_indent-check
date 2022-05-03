@@ -147,7 +147,7 @@ PuppetLint.new_check(:'strict_indent') do
       # oh no! incorrect indent!
       if actual != expected
         # no one cares if blank lines and comments are indented correctly
-        if not [:COMMENT, :NEWLINE].include?(token.next_token.type)
+        if not [:COMMENT, :NEWLINE, :HEREDOC_PRE].include?(token.next_token.type)
           notify :warning, {
             :message => "indent should be #{expected} chars and is #{actual}",
             :line    => token.next_token.line,
