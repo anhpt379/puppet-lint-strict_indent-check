@@ -19,3 +19,14 @@ case fact('os.family') {
       | EOT
   }
 }
+
+file { 'name':
+  'heredoc1' => @(EOT)
+    Hello
+    World
+    | EOT
+  'heredoc2' => @(EOT),
+    Hello
+    World
+    | EOT
+}

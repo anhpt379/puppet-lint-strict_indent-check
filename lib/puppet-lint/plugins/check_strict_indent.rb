@@ -131,6 +131,8 @@ PuppetLint.new_check(:'strict_indent') do
       actual = 0
       if token.next_token.type == :INDENT
         actual = token.next_token.value.length
+      elsif token.next_token.type == :RBRACE
+        actual = token.next_token.value.length - 1
       elsif !token.prev_token.nil? and token.prev_token.type == :HEREDOC
         actual = token.prev_token.value.split("\n").last.length
       elsif !token.prev_token.nil? and token.prev_token.type == :HEREDOC_OPEN
