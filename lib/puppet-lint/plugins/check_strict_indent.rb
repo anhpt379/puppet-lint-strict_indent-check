@@ -198,8 +198,11 @@ PuppetLint.new_check(:'strict_indent') do
         current_indent = get_heredoc_indent(heredoc_post)
 
         heredoc_pre.value.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
-        heredoc_mid.value.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
-        heredoc_post.raw.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
+        if heredoc_pre.value.end_with?("\n")
+          heredoc_pre.value += char_for_indent * problem[:indent]
+        end
+        heredoc_mid.value.gsub!(/\n#{char_for_indent * current_indent}/, "\n" + char_for_indent * problem[:indent])
+        heredoc_post.raw.gsub!(/\n#{char_for_indent * current_indent}/, "\n" + char_for_indent * problem[:indent])
       else
         tokens.insert(
           tokens.find_index(problem[:token]),
