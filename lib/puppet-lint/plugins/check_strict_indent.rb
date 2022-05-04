@@ -129,9 +129,10 @@ PuppetLint.new_check(:'strict_indent') do
       # obviously we have a problem
       if indent < 0
         notify :error, {
-          :message => 'Error calculating indent. Please file an issue at https://github.com/relud/puppet-lint-indent-check/issues',
+          :message => 'Error calculating indent',
           :line    => token.next_token.line,
           :column  => token.next_token.column,
+          :token   => token.next_token,
         }
         # stop parsing indent
         break
@@ -175,6 +176,9 @@ PuppetLint.new_check(:'strict_indent') do
   end
 
   def fix(problem)
+    if not problem[:indent]
+      return
+    end
     char_for_indent = ' '
     if [:INDENT,:WHITESPACE].include?(problem[:token].type)
       problem[:token].value = char_for_indent * problem[:indent]
