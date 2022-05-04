@@ -8,19 +8,20 @@ PuppetLint.new_check(:'strict_indent') do
       :RBRACK => :LBRACK,
       :RPAREN => :LPAREN,
       :HEREDOC => :HEREDOC_OPEN,
-      :HEREDOC_POST => :HEREDOC_OPEN,
+      :HEREDOC_POST => :HEREDOC_PRE,
     }
     open = {
       :LBRACE => [],
       :LBRACK => [],
       :LPAREN => [],
       :HEREDOC_OPEN => [],
+      :HEREDOC_PRE => [],
     }
 
     matches = {}
 
     tokens.each do |token|
-      if [:LBRACE, :LBRACK, :LPAREN, :HEREDOC_OPEN].include?(token.type)
+      if [:LBRACE, :LBRACK, :LPAREN, :HEREDOC_OPEN, :HEREDOC_PRE].include?(token.type)
         open[token.type] << token
       elsif [:RBRACE, :RBRACK, :RPAREN, :HEREDOC, :HEREDOC_POST].include?(token.type)
         match = open[opening_token[token.type]].pop
@@ -53,7 +54,7 @@ PuppetLint.new_check(:'strict_indent') do
       open_groups = 0
       prev_token = token.prev_token
       while not prev_token.nil? and prev_token.type != :NEWLINE
-        if prev_token.type == :HEREDOC_OPEN
+        if [:HEREDOC_OPEN, :HEREDOC_PRE].include?(prev_token.type)
           temp_indent += 1
         end
         if [:LBRACE, :LBRACK, :LPAREN].include?(prev_token.type)
@@ -137,7 +138,7 @@ PuppetLint.new_check(:'strict_indent') do
         actual = token.prev_token.value.split("\n").last.length
       elsif !token.next_token.nil? and token.next_token.type == :HEREDOC
         actual = token.next_token.value.split("\n").last.length
-      elsif !token.prev_token.nil? and token.prev_token.type == :HEREDOC_OPEN
+      elsif !token.prev_token.nil? and [:HEREDOC_OPEN, :HEREDOC_PRE].include?(token.prev_token.type)
         actual = next_token.prev_token.value.split("\n").last.length
       else
         actual = 0
@@ -149,7 +150,7 @@ PuppetLint.new_check(:'strict_indent') do
       # oh no! incorrect indent!
       if actual != expected
         # no one cares if blank lines are indented correctly
-        if not [:NEWLINE, :HEREDOC_PRE].include?(token.next_token.type)
+        if not [:NEWLINE].include?(token.next_token.type)
           notify :warning, {
             :message => "indent should be #{expected} chars and is #{actual}",
             :line    => token.next_token.line,
