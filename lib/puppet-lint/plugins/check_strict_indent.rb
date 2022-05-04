@@ -133,13 +133,13 @@ PuppetLint.new_check(:'strict_indent') do
       if token.next_token.type == :INDENT
         actual = token.next_token.value.length
       elsif token.next_token.type == :RBRACE
-        actual = token.next_token.value.length - 1
+        actual = token.next_token.value[/^ */].size
       elsif !token.prev_token.nil? and token.prev_token.type == :HEREDOC
-        actual = token.prev_token.value.split("\n").last.length
+        actual = token.prev_token.value.lines.last.length
       elsif !token.next_token.nil? and token.next_token.type == :HEREDOC
-        actual = token.next_token.value.split("\n").last.length
+        actual = token.next_token.value.lines.last.length
       elsif !token.prev_token.nil? and [:HEREDOC_OPEN, :HEREDOC_PRE].include?(token.prev_token.type)
-        actual = next_token.prev_token.value.split("\n").last.length
+        actual = next_token.prev_token.value.lines.last.length
       else
         actual = 0
       end
@@ -169,7 +169,7 @@ PuppetLint.new_check(:'strict_indent') do
       problem[:token].value = char_for_indent * problem[:indent]
     else
       if problem[:token].type == :HEREDOC
-        current_indent = problem[:token].value.split("\n").last.length
+        current_indent = problem[:token].value.lines.last.length
         problem[:token].raw.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
       else
         tokens.insert(
