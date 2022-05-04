@@ -3,6 +3,7 @@ $variable = @(EOT)
   heredoc string
   | EOT
 
+# comment
 $variable_with_interpolation = @("EOT")
   Another example
   ${variable}
@@ -11,8 +12,11 @@ $variable_with_interpolation = @("EOT")
   with interpolation
   | EOT
 
+# comment
 case fact('os.family') {
+  # comment
   'debian': {
+    # comment
     $greeting = @(EOT)
       Hello
       World
@@ -32,7 +36,8 @@ file { 'name':
 }
 
 file { '/etc/redis.conf':
-  ensure  => file,
+  ensure  => file,  # comment
+  # owner   => 'nobody',
   content => Deferred('inline_epp', [@(TEMPLATE), { 'redis_pass' => Deferred('unwrap', [$redis_pass]) }]),
     bind 0.0.0.0
     save ""
