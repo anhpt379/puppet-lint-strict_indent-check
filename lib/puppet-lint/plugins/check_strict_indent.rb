@@ -2,6 +2,15 @@
 # record a warning for each instance found.
 
 PuppetLint.new_check(:'strict_indent') do
+  def get_heredoc_indent(heredoc)
+    if heredoc.value.end_with?("\n")
+      indent = 0
+    else
+      indent = heredoc.value.lines.last.length
+    end
+    return indent
+  end
+
   def match(tokens)
     opening_token = {
       :RBRACE => :LBRACE,
@@ -54,7 +63,7 @@ PuppetLint.new_check(:'strict_indent') do
       open_groups = 0
       prev_token = token.prev_token
       while not prev_token.nil? and prev_token.type != :NEWLINE
-        if [:HEREDOC_OPEN, :HEREDOC_PRE].include?(prev_token.type)
+        if [:HEREDOC_OPEN].include?(prev_token.type)
           temp_indent += 1
         end
         if [:LBRACE, :LBRACK, :LPAREN].include?(prev_token.type)
@@ -134,12 +143,14 @@ PuppetLint.new_check(:'strict_indent') do
         actual = token.next_token.value.length
       elsif token.next_token.type == :RBRACE
         actual = token.next_token.value[/^ */].size
+      elsif !token.next_token.nil? and token.next_token.type == :HEREDOC_PRE
+        actual = token.next_token.value[/^ */].size
       elsif !token.prev_token.nil? and token.prev_token.type == :HEREDOC
-        actual = token.prev_token.value.lines.last.length
+        actual = get_heredoc_indent(token.prev_token)
       elsif !token.next_token.nil? and token.next_token.type == :HEREDOC
-        actual = token.next_token.value.lines.last.length
-      elsif !token.prev_token.nil? and [:HEREDOC_OPEN, :HEREDOC_PRE].include?(token.prev_token.type)
-        actual = next_token.prev_token.value.lines.last.length
+        actual = get_heredoc_indent(token.next_token)
+      elsif !next_token.nil? and !token.prev_token.nil? and token.prev_token.type == :HEREDOC_OPEN
+        actual = get_heredoc_indent(next_token.prev_token)
       else
         actual = 0
       end
@@ -169,8 +180,26 @@ PuppetLint.new_check(:'strict_indent') do
       problem[:token].value = char_for_indent * problem[:indent]
     else
       if problem[:token].type == :HEREDOC
-        current_indent = problem[:token].value.lines.last.length
+        current_indent = get_heredoc_indent(problem[:token])
         problem[:token].raw.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
+      elsif problem[:token].type == :HEREDOC_PRE
+        heredoc_pre = problem[:token]
+
+        heredoc_mid = heredoc_pre
+        while heredoc_mid and heredoc_mid.type != :HEREDOC_MID do
+          heredoc_mid = heredoc_mid.next_token
+        end
+
+        heredoc_post = heredoc_mid
+        while heredoc_post and heredoc_post.type != :HEREDOC_POST do
+          heredoc_post = heredoc_post.next_token
+        end
+
+        current_indent = get_heredoc_indent(heredoc_post)
+
+        heredoc_pre.value.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
+        heredoc_mid.value.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
+        heredoc_post.raw.gsub!(/^#{char_for_indent * current_indent}/, char_for_indent * problem[:indent])
       else
         tokens.insert(
           tokens.find_index(problem[:token]),
