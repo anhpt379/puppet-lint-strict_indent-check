@@ -35,6 +35,17 @@ file { 'name':
     | EOT
 }
 
+file { 'name':
+  mode    => '0444',
+  owner   => 'root',
+  group   => 'root',
+  content => @("EOF"/L)
+    var1=$var1
+    var2=$var2
+    var3=$var3
+    | EOF
+}
+
 file { '/etc/redis.conf':
   ensure  => file,  # comment
   # owner   => 'nobody',

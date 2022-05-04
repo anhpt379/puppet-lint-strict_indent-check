@@ -185,14 +185,17 @@ PuppetLint.new_check(:'strict_indent') do
       elsif problem[:token].type == :HEREDOC_PRE
         heredoc_pre = problem[:token]
 
-        heredoc_mid = heredoc_pre
-        while heredoc_mid and heredoc_mid.type != :HEREDOC_MID do
-          heredoc_mid = heredoc_mid.next_token
-        end
-
-        heredoc_post = heredoc_mid
-        while heredoc_post and heredoc_post.type != :HEREDOC_POST do
-          heredoc_post = heredoc_post.next_token
+        heredoc_mids = []
+        heredoc_post = nil
+        token = heredoc_pre
+        while token.next_token
+          if token.type == :HEREDOC_MID
+            heredoc_mids.push(token)
+          elsif token.type == :HEREDOC_POST
+            heredoc_post = token
+            break
+          end
+          token = token.next_token
         end
 
         current_indent = get_heredoc_indent(heredoc_post)
@@ -201,7 +204,9 @@ PuppetLint.new_check(:'strict_indent') do
         if heredoc_pre.value.end_with?("\n")
           heredoc_pre.value += char_for_indent * problem[:indent]
         end
-        heredoc_mid.value.gsub!(/\n#{char_for_indent * current_indent}/, "\n" + char_for_indent * problem[:indent])
+        heredoc_mids.each { |heredoc_mid|
+          heredoc_mid.value.gsub!(/\n#{char_for_indent * current_indent}/, "\n" + char_for_indent * problem[:indent])
+        }
         heredoc_post.raw.gsub!(/\n#{char_for_indent * current_indent}/, "\n" + char_for_indent * problem[:indent])
       else
         tokens.insert(
